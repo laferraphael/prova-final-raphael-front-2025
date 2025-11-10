@@ -5,6 +5,21 @@ import LogoutButton from "./LogoutButton.jsx";
 
 const BASE_URL = "/api";
 
+// Função para decodificar JWT (sem verificar assinatura, apenas para debug)
+function decodeJWT(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.error('Erro ao decodificar JWT:', e);
+    return null;
+  }
+}
+
 export default function FilmeApp() {
   const [filmes, setFilmes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +57,18 @@ export default function FilmeApp() {
         }
         
         console.log('Token obtido:', accessToken ? 'Token presente' : 'Token vazio');
+        if (accessToken) {
+          const decoded = decodeJWT(accessToken);
+          if (decoded) {
+            console.log('🔍 Informações do Token JWT:');
+            console.log('  - Issuer (iss):', decoded.iss);
+            console.log('  - Audience (aud):', decoded.aud);
+            console.log('  - Subject (sub):', decoded.sub);
+            console.log('  - Expira em:', new Date(decoded.exp * 1000).toLocaleString());
+            console.log('  - Scopes:', decoded.scope);
+            console.log('  - Token completo (primeiros 50 chars):', accessToken.substring(0, 50) + '...');
+          }
+        }
         setToken(accessToken);
       } catch (e) {
         console.error('Erro ao buscar token:', e);
@@ -81,15 +108,22 @@ export default function FilmeApp() {
     setError(null);
     try {
       console.log('Fazendo requisição GET para /api/filmes com token');
+      console.log('Header Authorization:', `Bearer ${token.substring(0, 20)}...`);
       const res = await fetch(`${BASE_URL}/filmes`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       console.log('Resposta recebida:', res.status, res.statusText);
+      console.log('Headers da resposta:', Object.fromEntries(res.headers.entries()));
       if (!res.ok) {
         const text = await res.text();
-        console.error('Erro na resposta:', res.status, text);
+        console.error('❌ Erro na resposta:', res.status, text);
+        console.error('💡 Possíveis causas:');
+        console.error('   1. Audience do token não corresponde ao esperado pelo backend');
+        console.error('   2. Backend não está configurado para validar tokens do Auth0');
+        console.error('   3. Token expirado ou inválido');
+        console.error('   4. Backend espera um formato diferente de autenticação');
         throw new Error(`Erro ao carregar: ${res.status}`);
       }
       const data = await res.json();
