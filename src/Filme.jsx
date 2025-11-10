@@ -56,17 +56,25 @@ export default function FilmeApp() {
           accessToken = await getAccessTokenSilently();
         }
         
-        console.log('Token obtido:', accessToken ? 'Token presente' : 'Token vazio');
+        console.log('✅ Token obtido:', accessToken ? 'Token presente' : 'Token vazio');
         if (accessToken) {
           const decoded = decodeJWT(accessToken);
           if (decoded) {
-            console.log('🔍 Informações do Token JWT:');
-            console.log('  - Issuer (iss):', decoded.iss);
-            console.log('  - Audience (aud):', decoded.aud);
-            console.log('  - Subject (sub):', decoded.sub);
-            console.log('  - Expira em:', new Date(decoded.exp * 1000).toLocaleString());
-            console.log('  - Scopes:', decoded.scope);
-            console.log('  - Token completo (primeiros 50 chars):', accessToken.substring(0, 50) + '...');
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('🔍 INFORMAÇÕES DO TOKEN JWT (DEBUG):');
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('  📍 Issuer (iss):', decoded.iss);
+            console.log('  🎯 Audience (aud):', decoded.aud || 'UNDEFINED - Backend pode não precisar');
+            console.log('  👤 Subject (sub):', decoded.sub);
+            console.log('  ⏰ Expira em:', new Date(decoded.exp * 1000).toLocaleString());
+            console.log('  🔑 Scopes:', decoded.scope);
+            console.log('  📝 Token (início):', accessToken.substring(0, 50) + '...');
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('💡 Se o Audience for UNDEFINED, o backend pode não precisar de audience específico');
+            console.log('💡 Se o Audience tiver valor, verifique se corresponde ao esperado pelo backend');
+            console.log('═══════════════════════════════════════════════════════');
+          } else {
+            console.error('❌ Não foi possível decodificar o token JWT');
           }
         }
         setToken(accessToken);
@@ -327,6 +335,35 @@ export default function FilmeApp() {
             </button>
             <button type="button" onClick={fetchFilmes} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
               Recarregar
+            </button>
+            <button 
+              type="button" 
+              onClick={() => {
+                if (token) {
+                  const decoded = decodeJWT(token);
+                  if (decoded) {
+                    console.log('═══════════════════════════════════════════════════════');
+                    console.log('🔍 INFORMAÇÕES DO TOKEN JWT (DEBUG):');
+                    console.log('═══════════════════════════════════════════════════════');
+                    console.log('  📍 Issuer (iss):', decoded.iss);
+                    console.log('  🎯 Audience (aud):', decoded.aud || 'UNDEFINED - Backend pode não precisar');
+                    console.log('  👤 Subject (sub):', decoded.sub);
+                    console.log('  ⏰ Expira em:', new Date(decoded.exp * 1000).toLocaleString());
+                    console.log('  🔑 Scopes:', decoded.scope);
+                    console.log('  📝 Token completo:', token);
+                    console.log('═══════════════════════════════════════════════════════');
+                    alert('Informações do token foram logadas no console! Abra o DevTools (F12) para ver.');
+                  } else {
+                    alert('Erro ao decodificar token. Veja o console para mais detalhes.');
+                  }
+                } else {
+                  alert('Token não disponível. Faça login novamente.');
+                }
+              }}
+              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
+              title="Debug: Mostra informações do token no console"
+            >
+              🔍 Debug Token
             </button>
           </div>
         </form>
