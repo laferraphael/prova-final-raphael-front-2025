@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "http://18.231.19.200:8080";
 
 
 export default function PessoasApp() {
