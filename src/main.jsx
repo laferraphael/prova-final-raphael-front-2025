@@ -5,8 +5,6 @@ import App from './App.jsx'
 import { Auth0Provider } from '@auth0/auth0-react'
 
 const onRedirectCallback = (appState) => {
-  console.log('Redirect callback chamado com appState:', appState);
-  // Limpar apenas após o Auth0 processar o callback
   const returnTo = appState?.returnTo || window.location.pathname;
   window.history.replaceState({}, document.title, returnTo);
 };
