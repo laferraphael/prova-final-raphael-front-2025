@@ -1,4 +1,7 @@
+import { useAuth0 } from "@auth0/auth0-react";
 import React, { useEffect, useState } from "react";
+import LoginButton from "./LoginButton";
+import LogoutButton from "./LogoutButton";
 
 const BASE_URL = "http://18.231.19.200:8080";
 
@@ -13,9 +16,32 @@ export default function PessoasApp() {
   const [dataNascimento, setDataNascimento] = useState("");
   const [email, setEmail] = useState("");
 
+  const {
+    user,
+    isAuthenticated,
+    getAccessTokenSilently
+  } = useAuth0();
+
   useEffect(() => {
-    fetchPessoas();
-  }, []);
+    const fetchToken = async () => {
+      try {
+        const accessToken = await getAccessTokenSilently();
+        console.log(accessToken)
+        setToken(accessToken);
+      } catch (e) {
+        console.error('Erro ao buscar token:', e);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchToken();
+    }
+  }, [isAuthenticated, getAccessTokenSilently]);
+
+
+  if (!isAuthenticated) {
+    return <LoginButton />;
+  }
 
   async function fetchPessoas() {
     setLoading(true);
@@ -74,6 +100,15 @@ export default function PessoasApp() {
 
   return (
     <div className="min-h-screen p-6 bg-gray-50 font-sans">
+
+      <div>
+        <img src={user.picture} alt={user.name} />
+        <h2>{user.name}</h2>
+        <p>{user.email}</p>
+        <LogoutButton />
+      </div>
+
+
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow p-6">
         <h1 className="text-2xl font-bold mb-4">Stocks — criação e listagem</h1>
 
