@@ -25,7 +25,11 @@ export default function FilmeApp() {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const accessToken = await getAccessTokenSilently();
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+          }
+        });
         setToken(accessToken);
       } catch (e) {
         console.error('Erro ao buscar token:', e);
@@ -90,6 +94,25 @@ export default function FilmeApp() {
     e.preventDefault();
     setError(null);
 
+    if (!token) {
+      try {
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+          }
+        });
+        setToken(accessToken);
+        if (!accessToken) {
+          setError("Token de autenticação não disponível. Por favor, faça login novamente.");
+          return;
+        }
+      } catch (e) {
+        console.error('Erro ao buscar token:', e);
+        setError("Erro ao obter token de autenticação. Por favor, faça login novamente.");
+        return;
+      }
+    }
+
     const notaNum = parseFloat(nota);
     if (isNaN(notaNum) || notaNum < 0 || notaNum > 5) {
       setError("A nota deve ser um número entre 0 e 5");
@@ -104,11 +127,16 @@ export default function FilmeApp() {
     };
 
     try {
+      const currentToken = token || await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+        }
+      });
       const res = await fetch(`${BASE_URL}/filmes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${currentToken}`,
         },
         body: JSON.stringify(dto)
       });
@@ -137,10 +165,15 @@ export default function FilmeApp() {
 
     setError(null);
     try {
+      const currentToken = token || await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+        }
+      });
       const res = await fetch(`${BASE_URL}/filmes/${id}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${currentToken}`,
         },
       });
 
