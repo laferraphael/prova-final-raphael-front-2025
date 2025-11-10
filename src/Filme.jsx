@@ -25,11 +25,23 @@ export default function FilmeApp() {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
-          }
-        });
+        // Tenta obter token sem audience primeiro (muitos backends não precisam)
+        let accessToken;
+        const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
+        
+        if (audience) {
+          // Se há audience configurado, usa ele
+          accessToken = await getAccessTokenSilently({
+            authorizationParams: {
+              audience: audience
+            }
+          });
+        } else {
+          // Tenta sem audience (token genérico)
+          accessToken = await getAccessTokenSilently();
+        }
+        
+        console.log('Token obtido:', accessToken ? 'Token presente' : 'Token vazio');
         setToken(accessToken);
       } catch (e) {
         console.error('Erro ao buscar token:', e);
@@ -61,19 +73,29 @@ export default function FilmeApp() {
   );
 
   const fetchFilmes = useCallback(async () => {
-    if (!token) return;
+    if (!token) {
+      console.log('Token não disponível para fetchFilmes');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
+      console.log('Fazendo requisição GET para /api/filmes com token');
       const res = await fetch(`${BASE_URL}/filmes`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error(`Erro ao carregar: ${res.status}`);
+      console.log('Resposta recebida:', res.status, res.statusText);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Erro na resposta:', res.status, text);
+        throw new Error(`Erro ao carregar: ${res.status}`);
+      }
       const data = await res.json();
       setFilmes(Array.isArray(data) ? data : []);
     } catch (err) {
+      console.error('Erro em fetchFilmes:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -94,15 +116,19 @@ export default function FilmeApp() {
     e.preventDefault();
     setError(null);
 
-    if (!token) {
+    let currentToken = token;
+    if (!currentToken) {
       try {
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
-          }
-        });
-        setToken(accessToken);
-        if (!accessToken) {
+        const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
+        if (audience) {
+          currentToken = await getAccessTokenSilently({
+            authorizationParams: { audience: audience }
+          });
+        } else {
+          currentToken = await getAccessTokenSilently();
+        }
+        setToken(currentToken);
+        if (!currentToken) {
           setError("Token de autenticação não disponível. Por favor, faça login novamente.");
           return;
         }
@@ -127,11 +153,18 @@ export default function FilmeApp() {
     };
 
     try {
-      const currentToken = token || await getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+      if (!currentToken) {
+        const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
+        if (audience) {
+          currentToken = await getAccessTokenSilently({
+            authorizationParams: { audience: audience }
+          });
+        } else {
+          currentToken = await getAccessTokenSilently();
         }
-      });
+      }
+      
+      console.log('Fazendo requisição POST para /api/filmes com token');
       const res = await fetch(`${BASE_URL}/filmes`, {
         method: "POST",
         headers: {
@@ -140,6 +173,7 @@ export default function FilmeApp() {
         },
         body: JSON.stringify(dto)
       });
+      console.log('Resposta POST recebida:', res.status, res.statusText);
 
       if (!res.ok) {
         const text = await res.text();
@@ -165,11 +199,17 @@ export default function FilmeApp() {
 
     setError(null);
     try {
-      const currentToken = token || await getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE || "https://dev-n7ewnwbo2a24rkxj.us.auth0.com/api/v2/"
+      let currentToken = token;
+      if (!currentToken) {
+        const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
+        if (audience) {
+          currentToken = await getAccessTokenSilently({
+            authorizationParams: { audience: audience }
+          });
+        } else {
+          currentToken = await getAccessTokenSilently();
         }
-      });
+      }
       const res = await fetch(`${BASE_URL}/filmes/${id}`, {
         method: "DELETE",
         headers: {
